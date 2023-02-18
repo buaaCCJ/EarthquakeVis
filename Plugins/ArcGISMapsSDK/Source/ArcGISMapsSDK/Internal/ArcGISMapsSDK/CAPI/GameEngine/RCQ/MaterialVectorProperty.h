@@ -1,0 +1,34 @@
+// COPYRIGHT 1995-2022 ESRI
+// TRADE SECRETS: ESRI PROPRIETARY AND CONFIDENTIAL
+// Unpublished material - all rights reserved under the
+// Copyright Laws of the United States and applicable international
+// laws, treaties, and conventions.
+//
+// For additional information, contact:
+// Attn: Contracts and Legal Department
+// Environmental Systems Research Institute, Inc.
+// 380 New York Street
+// Redlands, California 92373
+// USA
+//
+// email: legal@esri.com
+#pragma once
+
+#include "ArcGISMapsSDK/CAPI/Platform.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+typedef enum RT_MaterialVectorProperty
+{
+    RT_MaterialVectorProperty_mapAreaMin = 0,
+    RT_MaterialVectorProperty_mapAreaMax = 1,
+    RT_MaterialVectorProperty_normalMapRegion = 2,
+    RT_MaterialVectorProperty_imageryRegion = 3
+} RT_MaterialVectorProperty;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
