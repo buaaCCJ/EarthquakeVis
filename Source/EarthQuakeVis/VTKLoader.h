@@ -4,29 +4,38 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "VTKProxyActor.h"
+#include "Materials/MaterialInterface.h"
 #include "VTKLoader.generated.h"
 
 UCLASS()
 class EARTHQUAKEVIS_API AVTKLoader : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AVTKLoader();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FString VTKFileFolderPath;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		TArray<AVTKProxyActor*> ProxyActors;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UMaterialInterface* VTKMaterial;
 	UFUNCTION(BlueprintCallable)
-		void LoadFile();
+		void LoadFile(int32 Num);
 
 	UFUNCTION(BlueprintCallable)
 		void Play();
+
+	UFUNCTION(BlueprintCallable)
+		void Stop();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 

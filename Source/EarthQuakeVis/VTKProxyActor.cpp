@@ -8,7 +8,7 @@
 // Sets default values
 AVTKProxyActor::AVTKProxyActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	MeshComp = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh"));
 	RootComponent = MeshComp;
@@ -20,17 +20,30 @@ AVTKProxyActor::AVTKProxyActor()
 void AVTKProxyActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 // Called every frame
 void AVTKProxyActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (bStartAnim)
+	{
+		UpdateAnimation();
+		CurrentAnimTime += DeltaTime;
+		CurrentFrameIdx++;
+
+	}
 
 }
-void AVTKProxyActor::GenerateFromVTK(vtkSmartPointer<vtkPolyData> PolyData)
+void AVTKProxyActor::GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSmartPointer<vtkPolyData> PolyData)
 {
+	if (bInit)
+	{
+		AllVertices.Empty();
+
+	}
+	MeshComp->SetMaterial(0, Mat);
 	// optional code ~ have to include Engine.h
 	// output number of points
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green,
@@ -41,8 +54,8 @@ void AVTKProxyActor::GenerateFromVTK(vtkSmartPointer<vtkPolyData> PolyData)
 	auto MessageLog = FMessageLog("Points");
 	MessageLog.Open(EMessageSeverity::Info, true);
 
-	TArray<FLinearColor> VerticeColors;
 
+	TArray<FLinearColor> VerticeColors;
 	// optional - output all points to message log
 		// store all the points into a vvector containing all the vertices
 	double x[3];
@@ -51,30 +64,31 @@ void AVTKProxyActor::GenerateFromVTK(vtkSmartPointer<vtkPolyData> PolyData)
 		// get point from poly data and store in vertice
 		PolyData->GetPoint(i, x);
 		Vertices.Add(FVector(x[0], x[1], x[2]));
-
-		VerticeColors.Add(FLinearColor(255, 255, 255, 255));
+		if (bInit)
+			VerticeColors.Add(FLinearColor(255, 255, 255, 255));
 
 		// optional - output point to message log
 		//MessageLog.Message(EMessageSeverity::Info,
 		//	FText::FromString(FString::Printf(TEXT("Point %d: (%f, %f, %f)"), i, x[0], x[1], x[2])));
 	}
-
+	AllVertices.Emplace(Vertices);
+	if (!bInit)return;
 	// create a cell array data to get all the polygons from the polygon data
 	vtkSmartPointer<vtkCellArray> CellArray = vtkSmartPointer<vtkCellArray>::New();
 
 	// get polygon data and store into array
 	CellArray = PolyData->GetPolys();
 
-	// optional - output number of triangles
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue,
-		TEXT("Number of Vertices: ") + FString::SanitizeFloat(CellArray->GetSize()));
+	//// optional - output number of triangles
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue,
+	//	TEXT("Number of Vertices: ") + FString::SanitizeFloat(CellArray->GetSize()));
 
 	// stores the data for triangles
 	TArray<int32> Triangles;
 
 	// create a list that stores the points, in order, for each triangle
 		// get each vertice and add it into a triangles vector in order
-	vtkSmartPointer<vtkIdList> p =vtkSmartPointer<vtkIdList>::New();
+	vtkSmartPointer<vtkIdList> p = vtkSmartPointer<vtkIdList>::New();
 
 	int h;
 
@@ -96,9 +110,30 @@ void AVTKProxyActor::GenerateFromVTK(vtkSmartPointer<vtkPolyData> PolyData)
 	// draws the vertices and triangles in Unreal
 	// most of the fields are unused for the purpose of this project, so just create empty arrays
 	MeshComp->CreateMeshSection_LinearColor(0, Vertices, Triangles,
-		TArray<FVector>(), TArray<FVector2D>(), VerticeColors, TArray<FProcMeshTangent>(), true);
+		TArray<FVector>(), TArray<FVector2D>(), VerticeColors, TArray<FProcMeshTangent>(), false);
 
 	// Enable collision data
 	MeshComp->ContainsPhysicsTriMeshData(true);
+}
+
+void AVTKProxyActor::StartPlayAnimation()
+{
+	bStartAnim = true;
+	CurrentAnimTime = 0.0;
+	CurrentFrameIdx = 0;
+}
+
+void AVTKProxyActor::EndPlayAnimation()
+{
+	bStartAnim = false;
+}
+
+void AVTKProxyActor::UpdateAnimation()
+{
+	CurrentFrameIdx = CurrentFrameIdx % ColorFrameList.Num();
+	TArray<FVector2D> EmptyArray;
+	TArray<FColor> EmptyColorArray;
+
+	MeshComp->UpdateMeshSection(0, AllVertices[0], TArray<FVector>(), TArray<FVector2D>(), EmptyArray, EmptyArray, EmptyArray, ColorFrameList[CurrentFrameIdx], TArray<FProcMeshTangent>());
 }
 
