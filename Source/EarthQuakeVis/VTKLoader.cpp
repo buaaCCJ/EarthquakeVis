@@ -92,11 +92,16 @@ void AVTKLoader::Stop()
 		ProxyActors[0]->EndPlayAnimation();
 }
 
+void AVTKLoader::SetArcgisVis(bool bShow)
+{
+	if (ProxyActors.Num() > 0)
+		ProxyActors[0]->EndPlayAnimation();
+}
+
 // Called when the game starts or when spawned
 void AVTKLoader::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 // Called every frame

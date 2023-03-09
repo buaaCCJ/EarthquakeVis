@@ -4,6 +4,13 @@
 #include "VTKProxyActor.h"
 #include "ProceduralMeshComponent.h"
 #include "vtkContourTriangulator.h"
+#include "Kismet/GameplayStatics.h"
+#include "ArcGISMapsSDK/Actors/ArcGISMapActor.h"
+#include "ArcGISMapsSDK/Utils/GeoCoord/GeoPosition.h"
+#include "ArcGISMapsSDK/Components/ArcGISMapComponent.h"
+#include "ArcGISMapsSDK/BlueprintNodes/GameEngine/Geometry/ArcGISPoint.h"
+#include "ArcGISMapsSDK/BlueprintNodes/GameEngine/Geometry/ArcGISSpatialReference.h"
+#include "CartesianCoordinates.h"
 
 // Sets default values
 AVTKProxyActor::AVTKProxyActor()
@@ -20,7 +27,16 @@ AVTKProxyActor::AVTKProxyActor()
 void AVTKProxyActor::BeginPlay()
 {
 	Super::BeginPlay();
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AArcGISMapActor::StaticClass(), FoundActors);
+	if (FoundActors.Num() > 0)
+		ArcGisMapActor = Cast<AArcGISMapActor>(FoundActors[0]);
 
+	FoundActors.Empty();
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGeoReferencingSystem::StaticClass(), FoundActors);
+
+	if (FoundActors.Num() > 0)
+		GeoReferenceingSystem = Cast<AGeoReferencingSystem>(FoundActors[0]);
 }
 
 // Called every frame
@@ -63,7 +79,21 @@ void AVTKProxyActor::GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSma
 	for (vtkIdType i = 0; i < PolyData->GetNumberOfPoints(); i++) {
 		// get point from poly data and store in vertice
 		PolyData->GetPoint(i, x);
-		Vertices.Add(FVector(x[0], x[1], x[2]));
+		FVector Vertex(FVector(x[0], x[1], x[2]));
+		//×ø±êÏµ×ª»»
+		//if (ArcGisMapActor)
+		{
+			FGeographicCoordinates ProjectedCoordinates(x[0], x[1], x[2]);
+			FVector EngineCoordinates;
+			GeoReferenceingSystem->GeographicToEngine(ProjectedCoordinates, EngineCoordinates);
+			Vertex = EngineCoordinates;
+			if (Vertex.ContainsNaN())
+			{
+				UE_LOG(LogTemp, Log, TEXT("lnglatalt: %f,%f,%f"), x[0], x[1], x[2]);
+			}
+		}
+		Vertices.Add(Vertex);
+
 		if (bInit)
 			VerticeColors.Add(FLinearColor(255, 255, 255, 255));
 
@@ -78,10 +108,6 @@ void AVTKProxyActor::GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSma
 
 	// get polygon data and store into array
 	CellArray = PolyData->GetPolys();
-
-	//// optional - output number of triangles
-	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue,
-	//	TEXT("Number of Vertices: ") + FString::SanitizeFloat(CellArray->GetSize()));
 
 	// stores the data for triangles
 	TArray<int32> Triangles;
@@ -107,13 +133,14 @@ void AVTKProxyActor::GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSma
 			Triangles.Add(p->GetId(2));
 		}
 	}
+	FBox Bounds(Vertices);
 	// draws the vertices and triangles in Unreal
 	// most of the fields are unused for the purpose of this project, so just create empty arrays
 	MeshComp->CreateMeshSection_LinearColor(0, Vertices, Triangles,
 		TArray<FVector>(), TArray<FVector2D>(), VerticeColors, TArray<FProcMeshTangent>(), false);
 
 	// Enable collision data
-	MeshComp->ContainsPhysicsTriMeshData(true);
+	//MeshComp->ContainsPhysicsTriMeshData(true);
 }
 
 void AVTKProxyActor::StartPlayAnimation()
@@ -126,6 +153,16 @@ void AVTKProxyActor::StartPlayAnimation()
 void AVTKProxyActor::EndPlayAnimation()
 {
 	bStartAnim = false;
+}
+
+void AVTKProxyActor::SetArcgisVis(bool bShow)
+{
+	/*if (!ArcGisMapActor)return;
+	TArray<UActorComponent*> MeshComponents = ArcGisMapActor->K2_GetComponentsByClass(UArcGISMeshComponent::StaticClass());
+	for (auto MeshComponent : MeshComponents)
+	{
+		Cast<UArcGISMeshComponent>(MeshComponent)->SetVisibility(bShow);
+	}*/
 }
 
 void AVTKProxyActor::UpdateAnimation()

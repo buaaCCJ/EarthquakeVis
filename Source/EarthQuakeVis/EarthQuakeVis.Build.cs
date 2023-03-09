@@ -5,13 +5,13 @@ using System.IO;
 
 public class EarthQuakeVis : ModuleRules
 {
-	public EarthQuakeVis(ReadOnlyTargetRules Target) : base(Target)
-	{
-		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" , "ProceduralMeshComponent","VTK","VTKPlugin" });
+    public EarthQuakeVis(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ProceduralMeshComponent", "VTK", "VTKPlugin", "ArcGISMapsSDK", "GeoReferencing" });
+
+        PrivateDependencyModuleNames.AddRange(new string[] { });
         // include header files
 
         // Uncomment if you are using Slate UI

@@ -31,6 +31,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void Stop();
+
+	UFUNCTION(BlueprintCallable)
+		void SetArcgisVis(bool bShow);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

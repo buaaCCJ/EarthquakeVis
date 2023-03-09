@@ -9,6 +9,8 @@
 #include "VTKProxyActor.generated.h"
 
 class UProceduralMeshComponent;
+class AArcGISMapActor;
+class AGeoReferencingSystem;
 
 UCLASS()
 class EARTHQUAKEVIS_API AVTKProxyActor : public AActor
@@ -27,11 +29,12 @@ public:
 
 	void GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSmartPointer<vtkPolyData> Data);
 
-
 	void SetColorFrames(const TArray<TArray<FColor>>& Frames) { ColorFrameList = Frames; }
 	void StartPlayAnimation();
 
 	void EndPlayAnimation();
+
+	void SetArcgisVis(bool bShow);
 
 	void UpdateAnimation();
 protected:
@@ -49,4 +52,7 @@ public:
 
 	float CurrentAnimTime = 0.0;
 	int32 CurrentFrameIdx = 0;
+
+	AArcGISMapActor* ArcGisMapActor = nullptr;
+	AGeoReferencingSystem* GeoReferenceingSystem = nullptr;
 };
