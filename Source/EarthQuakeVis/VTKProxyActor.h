@@ -6,12 +6,17 @@
 #include "GameFramework/Actor.h"
 #include "vtkPolyData.h"
 #include "Materials/MaterialInterface.h"
+#include "include/CDTUtils.h"
 #include "VTKProxyActor.generated.h"
 
 class UProceduralMeshComponent;
 class AArcGISMapActor;
 class AGeoReferencingSystem;
-
+struct FPoint
+{
+	FVector Position;
+	FVector Normal;
+};
 UCLASS()
 class EARTHQUAKEVIS_API AVTKProxyActor : public AActor
 {
@@ -28,6 +33,8 @@ public:
 
 
 	void GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSmartPointer<vtkPolyData> Data);
+
+	void GenerateFromCRUST(const TArray<FPoint>& Points, const CDT::TriangleVec& TriangleList);
 
 	void SetColorFrames(const TArray<TArray<FColor>>& Frames) { ColorFrameList = Frames; }
 	void StartPlayAnimation();

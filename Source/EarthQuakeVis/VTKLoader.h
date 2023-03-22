@@ -8,6 +8,8 @@
 #include "Materials/MaterialInterface.h"
 #include "VTKLoader.generated.h"
 
+class AGeoReferencingSystem;
+
 UCLASS()
 class EARTHQUAKEVIS_API AVTKLoader : public AActor
 {
@@ -18,13 +20,20 @@ public:
 	AVTKLoader();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FString VTKFileFolderPath;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString CRUSTFileFolderPath;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TArray<AVTKProxyActor*> ProxyActors;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UMaterialInterface* VTKMaterial;
+
 	UFUNCTION(BlueprintCallable)
 		void LoadFile(int32 Num);
+
+	UFUNCTION(BlueprintCallable)
+		void LoadCRUSTFile();
 
 	UFUNCTION(BlueprintCallable)
 		void Play();
@@ -41,5 +50,6 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	AGeoReferencingSystem* GeoReferenceingSystem = nullptr;
 
 };

@@ -11,6 +11,7 @@
 #include "ArcGISMapsSDK/BlueprintNodes/GameEngine/Geometry/ArcGISPoint.h"
 #include "ArcGISMapsSDK/BlueprintNodes/GameEngine/Geometry/ArcGISSpatialReference.h"
 #include "CartesianCoordinates.h"
+#include "include/CDTUtils.h"
 
 // Sets default values
 AVTKProxyActor::AVTKProxyActor()
@@ -141,6 +142,28 @@ void AVTKProxyActor::GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSma
 
 	// Enable collision data
 	//MeshComp->ContainsPhysicsTriMeshData(true);
+}
+
+void AVTKProxyActor::GenerateFromCRUST(const TArray<FPoint>& Points, const CDT::TriangleVec& TriangleList)
+{
+	TArray<FVector> Vertices;
+	TArray<FVector> Normals;
+	TArray<int32> Triangles;
+	TArray<FLinearColor> VerticeColors;
+
+	for (auto& Point : Points)
+	{
+		Vertices.Emplace(Point.Position);
+		Normals.Emplace(Point.Normal);
+	}
+	for(auto& Tri:TriangleList)
+	{
+		Triangles.Add(Tri.vertices[0]);
+		Triangles.Add(Tri.vertices[1]);
+		Triangles.Add(Tri.vertices[2]);
+	}
+	MeshComp->CreateMeshSection_LinearColor(0, Vertices, Triangles,
+		TArray<FVector>(), TArray<FVector2D>(), VerticeColors, TArray<FProcMeshTangent>(), false);
 }
 
 void AVTKProxyActor::StartPlayAnimation()

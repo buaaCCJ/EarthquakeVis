@@ -7,7 +7,17 @@
 #include "vtkDataReader.h"
 #include "VTKProxyActor.h"
 #include "Runtime/Core/Public/Async/ParallelFor.h"
-
+#include "CRUST/CrustLoader.h"
+#include "Kismet/GameplayStatics.h"
+#include "include/CDT.h"
+#include "include/CDTUtils.h"
+#include "CartesianCoordinates.h"
+#include "ArcGISMapsSDK/Actors/ArcGISMapActor.h"
+#include "ArcGISMapsSDK/Utils/GeoCoord/GeoPosition.h"
+#include "ArcGISMapsSDK/Components/ArcGISMapComponent.h"
+#include "ArcGISMapsSDK/BlueprintNodes/GameEngine/Geometry/ArcGISPoint.h"
+#include "ArcGISMapsSDK/BlueprintNodes/GameEngine/Geometry/ArcGISSpatialReference.h"
+#include "include/Triangulation.h"
 // Sets default values
 AVTKLoader::AVTKLoader()
 {
@@ -80,6 +90,64 @@ void AVTKLoader::LoadFile(int32 Num)
 		ProxyActors[0]->SetColorFrames(ColorFrameList);
 }
 
+
+void AVTKLoader::LoadCRUSTFile()
+{
+	return;
+	ACrustLoader* CrustLoader = Cast<ACrustLoader>(GetWorld()->SpawnActor(ACrustLoader::StaticClass()));
+	TArray<FString> CrustContent;
+	FFileHelper::LoadFileToStringArray(CrustContent, *CRUSTFileFolderPath);
+
+	//数据处理
+	const float LatStart = -89.5;
+	const float LngStart = -179.5;
+
+
+	//收集点位
+	TArray<FPoint> Water;
+
+	std::vector < CDT::V2d<double>> Lnglat;
+
+	for (int LatIdx = 0; LatIdx < 180; ++LatIdx)
+	{
+		for (int LngIdx = 0; LngIdx < 360; ++LngIdx)
+		{
+			TArray<FString> Offset;
+			CrustContent[360 * LatIdx + LngIdx].ParseIntoArray(Offset, TEXT(" "), false);
+			for (int32 idx = Offset.Num() - 1; idx >= 0; idx--)
+			{
+				if (Offset[idx] == "")
+					Offset.RemoveAt(idx);
+			}
+
+			float CurLat = LatStart + LatIdx;
+			float CurLng = LngStart + LngIdx;
+
+			FGeographicCoordinates ProjectedCoordinates(CurLng, CurLat, 0);
+			Lnglat.push_back(CDT::V2d<double>::make(CurLng, CurLat));
+			FVector EngineCoordinates;
+			GeoReferenceingSystem->GeographicToEngine(ProjectedCoordinates, EngineCoordinates);
+			FVector East;
+			FVector Up;
+			FVector North;
+			GeoReferenceingSystem->GetENUVectorsAtGeographicLocation(ProjectedCoordinates, East, North, Up);
+			float WaterThickness = FCString::Atof(*Offset[1]);
+
+			FVector OffsetVec = EngineCoordinates + Up * WaterThickness;
+
+			Water.Add({ OffsetVec,Up });
+		}
+	}
+
+	CDT::Triangulation<double> cdt;
+	cdt.insertVertices(Lnglat);
+	cdt.eraseSuperTriangle();
+	CDT::TriangleVec CurTriangleVec = cdt.triangles;
+
+	AVTKProxyActor* Proxy = Cast<AVTKProxyActor>(GetWorld()->SpawnActor(AVTKProxyActor::StaticClass()));
+	Proxy->GenerateFromCRUST(Water, CurTriangleVec);
+}
+
 void AVTKLoader::Play()
 {
 	if (ProxyActors.Num() > 0)
@@ -102,6 +170,12 @@ void AVTKLoader::SetArcgisVis(bool bShow)
 void AVTKLoader::BeginPlay()
 {
 	Super::BeginPlay();
+	TArray<AActor*> FoundActors;
+	FoundActors.Empty();
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGeoReferencingSystem::StaticClass(), FoundActors);
+
+	if (FoundActors.Num() > 0)
+		GeoReferenceingSystem = Cast<AGeoReferencingSystem>(FoundActors[0]);
 }
 
 // Called every frame
