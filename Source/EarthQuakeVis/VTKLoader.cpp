@@ -93,7 +93,6 @@ void AVTKLoader::LoadFile(int32 Num)
 
 void AVTKLoader::LoadCRUSTFile()
 {
-	return;
 	ACrustLoader* CrustLoader = Cast<ACrustLoader>(GetWorld()->SpawnActor(ACrustLoader::StaticClass()));
 	TArray<FString> CrustContent;
 	FFileHelper::LoadFileToStringArray(CrustContent, *CRUSTFileFolderPath);
@@ -102,12 +101,16 @@ void AVTKLoader::LoadCRUSTFile()
 	const float LatStart = -89.5;
 	const float LngStart = -179.5;
 
-
 	//收集点位
-	TArray<FPoint> Water;
+	TArray<TArray<FPoint>> EngineDataList;//表明每层的顶点数据
+	EngineDataList.SetNum(9);//一共九层
+	std::vector < CDT::V2d<double>> LnglatList;//收集各点的经纬度，用于后续三角化
 
-	std::vector < CDT::V2d<double>> Lnglat;
-
+	FVector EngineCoordinates;
+	FVector East;
+	FVector Up;
+	FVector North;
+	//todo  并行化处理
 	for (int LatIdx = 0; LatIdx < 180; ++LatIdx)
 	{
 		for (int LngIdx = 0; LngIdx < 360; ++LngIdx)
@@ -122,30 +125,33 @@ void AVTKLoader::LoadCRUSTFile()
 
 			float CurLat = LatStart + LatIdx;
 			float CurLng = LngStart + LngIdx;
+			LnglatList.push_back(CDT::V2d<double>::make(CurLng, CurLat));
 
 			FGeographicCoordinates ProjectedCoordinates(CurLng, CurLat, 0);
-			Lnglat.push_back(CDT::V2d<double>::make(CurLng, CurLat));
-			FVector EngineCoordinates;
 			GeoReferenceingSystem->GeographicToEngine(ProjectedCoordinates, EngineCoordinates);
-			FVector East;
-			FVector Up;
-			FVector North;
 			GeoReferenceingSystem->GetENUVectorsAtGeographicLocation(ProjectedCoordinates, East, North, Up);
-			float WaterThickness = FCString::Atof(*Offset[1]);
 
-			FVector OffsetVec = EngineCoordinates + Up * WaterThickness;
-
-			Water.Add({ OffsetVec,Up });
+			for (int32 idx = 0; idx < Offset.Num(); idx++)
+			{
+				float ShellThickness = FCString::Atof(*Offset[idx]);
+				FVector Temp = Up * ShellThickness * 1000 * 100;//引擎单位为cm
+				FVector OffsetVec = EngineCoordinates + Temp;
+				EngineDataList[idx].Add({ OffsetVec,Up });
+			}
 		}
 	}
 
+	//三角化
 	CDT::Triangulation<double> cdt;
-	cdt.insertVertices(Lnglat);
+	cdt.insertVertices(LnglatList);
 	cdt.eraseSuperTriangle();
 	CDT::TriangleVec CurTriangleVec = cdt.triangles;
 
-	AVTKProxyActor* Proxy = Cast<AVTKProxyActor>(GetWorld()->SpawnActor(AVTKProxyActor::StaticClass()));
-	Proxy->GenerateFromCRUST(Water, CurTriangleVec);
+	for (int32 idx = 0; idx < 9; idx++)
+	{
+		AVTKProxyActor* Proxy = Cast<AVTKProxyActor>(GetWorld()->SpawnActor(AVTKProxyActor::StaticClass()));
+		Proxy->GenerateFromCRUST(EngineDataList[idx], CurTriangleVec);
+	}
 }
 
 void AVTKLoader::Play()
@@ -169,13 +175,14 @@ void AVTKLoader::SetArcgisVis(bool bShow)
 // Called when the game starts or when spawned
 void AVTKLoader::BeginPlay()
 {
-	Super::BeginPlay();
 	TArray<AActor*> FoundActors;
 	FoundActors.Empty();
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGeoReferencingSystem::StaticClass(), FoundActors);
 
 	if (FoundActors.Num() > 0)
 		GeoReferenceingSystem = Cast<AGeoReferencingSystem>(FoundActors[0]);
+	Super::BeginPlay();
+
 }
 
 // Called every frame
