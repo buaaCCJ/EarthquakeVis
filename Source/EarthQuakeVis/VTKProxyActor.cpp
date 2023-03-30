@@ -61,50 +61,34 @@ void AVTKProxyActor::GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSma
 
 	}
 	MeshComp->SetMaterial(0, Mat);
-	// optional code ~ have to include Engine.h
-	// output number of points
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green,
-		TEXT("Number of Points: ") + FString::SanitizeFloat(PolyData->GetNumberOfPoints()));
-
-	// optional code 
-	// opens the message log for ouput
-	auto MessageLog = FMessageLog("Points");
-	MessageLog.Open(EMessageSeverity::Info, true);
-
 
 	TArray<FLinearColor> VerticeColors;
-	// optional - output all points to message log
-		// store all the points into a vvector containing all the vertices
+
 	double x[3];
 	TArray<FVector> Vertices;
+	TArray<FVector> Normals;
 	for (vtkIdType i = 0; i < PolyData->GetNumberOfPoints(); i++) {
-		// get point from poly data and store in vertice
 		PolyData->GetPoint(i, x);
 		FVector Vertex(FVector(x[0], x[1], x[2]));
-		//×ø±êÏµ×ª»»
-		//if (ArcGisMapActor)
 		{
 			FGeographicCoordinates ProjectedCoordinates(x[0], x[1], x[2]);
 			FVector EngineCoordinates;
 			GeoReferenceingSystem->GeographicToEngine(ProjectedCoordinates, EngineCoordinates);
+			FVector East;
+			FVector Up;
+			FVector North;
+			GeoReferenceingSystem->GetENUVectorsAtEngineLocation(EngineCoordinates, East, North, Up);
+
 			Vertex = EngineCoordinates;
-			if (Vertex.ContainsNaN())
-			{
-				UE_LOG(LogTemp, Log, TEXT("lnglatalt: %f,%f,%f"), x[0], x[1], x[2]);
-			}
+
+			Normals.Add(Up);
 		}
 		Vertices.Add(Vertex);
-
 		if (bInit)
 			VerticeColors.Add(FLinearColor(255, 255, 255, 255));
-
-		// optional - output point to message log
-		//MessageLog.Message(EMessageSeverity::Info,
-		//	FText::FromString(FString::Printf(TEXT("Point %d: (%f, %f, %f)"), i, x[0], x[1], x[2])));
 	}
 	AllVertices.Emplace(Vertices);
 	if (!bInit)return;
-	// create a cell array data to get all the polygons from the polygon data
 	vtkSmartPointer<vtkCellArray> CellArray = vtkSmartPointer<vtkCellArray>::New();
 
 	// get polygon data and store into array
@@ -113,10 +97,8 @@ void AVTKProxyActor::GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSma
 	// stores the data for triangles
 	TArray<int32> Triangles;
 
-	// create a list that stores the points, in order, for each triangle
-		// get each vertice and add it into a triangles vector in order
-	vtkSmartPointer<vtkIdList> p = vtkSmartPointer<vtkIdList>::New();
 
+	vtkSmartPointer<vtkIdList> p = vtkSmartPointer<vtkIdList>::New();
 	int h;
 
 	for (int i = 0; i < PolyData->GetNumberOfPolys(); i++) {
@@ -135,10 +117,9 @@ void AVTKProxyActor::GenerateFromVTK(UMaterialInterface* Mat, bool bInit, vtkSma
 		}
 	}
 	FBox Bounds(Vertices);
-	// draws the vertices and triangles in Unreal
-	// most of the fields are unused for the purpose of this project, so just create empty arrays
+
 	MeshComp->CreateMeshSection_LinearColor(0, Vertices, Triangles,
-		TArray<FVector>(), TArray<FVector2D>(), VerticeColors, TArray<FProcMeshTangent>(), false);
+		Normals, TArray<FVector2D>(), VerticeColors, TArray<FProcMeshTangent>(), false);
 
 	// Enable collision data
 	//MeshComp->ContainsPhysicsTriMeshData(true);
@@ -156,7 +137,7 @@ void AVTKProxyActor::GenerateFromCRUST(const TArray<FPoint>& Points, const CDT::
 		Vertices.Emplace(Point.Position);
 		Normals.Emplace(Point.Normal);
 	}
-	for(auto& Tri:TriangleList)
+	for (auto& Tri : TriangleList)
 	{
 		Triangles.Add(Tri.vertices[0]);
 		Triangles.Add(Tri.vertices[1]);

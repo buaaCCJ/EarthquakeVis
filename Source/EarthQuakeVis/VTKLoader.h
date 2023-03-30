@@ -9,6 +9,7 @@
 #include "VTKLoader.generated.h"
 
 class AGeoReferencingSystem;
+class AArcGISMapActor;
 
 UCLASS()
 class EARTHQUAKEVIS_API AVTKLoader : public AActor
@@ -51,5 +52,5 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	AGeoReferencingSystem* GeoReferenceingSystem = nullptr;
-
+	AArcGISMapActor* ArcGisMapActor = nullptr;
 };

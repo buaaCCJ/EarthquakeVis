@@ -110,6 +110,7 @@ void AVTKLoader::LoadCRUSTFile()
 	FVector East;
 	FVector Up;
 	FVector North;
+	FVector NewUp;
 	//todo  并行化处理
 	for (int LatIdx = 0; LatIdx < 180; ++LatIdx)
 	{
@@ -129,24 +130,32 @@ void AVTKLoader::LoadCRUSTFile()
 
 			FGeographicCoordinates ProjectedCoordinates(CurLng, CurLat, 0);
 			GeoReferenceingSystem->GeographicToEngine(ProjectedCoordinates, EngineCoordinates);
-			GeoReferenceingSystem->GetENUVectorsAtGeographicLocation(ProjectedCoordinates, East, North, Up);
+			GeoReferenceingSystem->GetENUVectorsAtEngineLocation(EngineCoordinates, East, North, Up);
+			auto MapComponent = ArcGisMapActor->GetMapComponent();
+			if (MapComponent)
+			{
+				auto PawnENUToViewENU = MapComponent->GetENUAtLocationToViewENUTransform(EngineCoordinates);
+				NewUp = PawnENUToViewENU.GetUnitAxis(EAxis::Z);
+			}
 
 			for (int32 idx = 0; idx < Offset.Num(); idx++)
 			{
 				float ShellThickness = FCString::Atof(*Offset[idx]);
-				FVector Temp = Up * ShellThickness * 1000 * 100;//引擎单位为cm
+				FVector Temp = NewUp * ShellThickness * 1000 * 100;//引擎单位为cm
 				FVector OffsetVec = EngineCoordinates + Temp;
+				//another way 
+				//	FGeographicCoordinates OffsetCoordinates(CurLng, CurLat, ShellThickness * 1000);
+					//GeoReferenceingSystem->GeographicToEngine(OffsetCoordinates, EngineCoordinates);
 				EngineDataList[idx].Add({ OffsetVec,Up });
 			}
 		}
 	}
 
 	//三角化
-	CDT::Triangulation<double> cdt;
-	cdt.insertVertices(LnglatList);
-	cdt.eraseSuperTriangle();
-	CDT::TriangleVec CurTriangleVec = cdt.triangles;
-
+	CDT::Triangulation<double> CDT;
+	CDT.insertVertices(LnglatList);
+	CDT.eraseSuperTriangle();
+	CDT::TriangleVec CurTriangleVec = CDT.triangles;
 	for (int32 idx = 0; idx < 9; idx++)
 	{
 		AVTKProxyActor* Proxy = Cast<AVTKProxyActor>(GetWorld()->SpawnActor(AVTKProxyActor::StaticClass()));
@@ -181,6 +190,11 @@ void AVTKLoader::BeginPlay()
 
 	if (FoundActors.Num() > 0)
 		GeoReferenceingSystem = Cast<AGeoReferencingSystem>(FoundActors[0]);
+	FoundActors.Empty();
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AArcGISMapActor::StaticClass(), FoundActors);
+	if (FoundActors.Num() > 0)
+		ArcGisMapActor = Cast<AArcGISMapActor>(FoundActors[0]);
+
 	Super::BeginPlay();
 
 }
