@@ -30,6 +30,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UMaterialInterface* VTKMaterial;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		int32 NumFrameToPlayAnim = 1;
+
 	UFUNCTION(BlueprintCallable)
 		void LoadFile(int32 Num);
 

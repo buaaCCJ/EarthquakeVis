@@ -87,7 +87,7 @@ void AVTKLoader::LoadFile(int32 Num)
 	}
 
 	if (ProxyActors.Num() > 0)
-		ProxyActors[0]->SetColorFrames(ColorFrameList);
+		ProxyActors[0]->SetColorFrames(NumFrameToPlayAnim, ColorFrameList);
 }
 
 
@@ -131,18 +131,15 @@ void AVTKLoader::LoadCRUSTFile()
 			FGeographicCoordinates ProjectedCoordinates(CurLng, CurLat, 0);
 			GeoReferenceingSystem->GeographicToEngine(ProjectedCoordinates, EngineCoordinates);
 			GeoReferenceingSystem->GetENUVectorsAtEngineLocation(EngineCoordinates, East, North, Up);
-			auto MapComponent = ArcGisMapActor->GetMapComponent();
-			if (MapComponent)
-			{
-				auto PawnENUToViewENU = MapComponent->GetENUAtLocationToViewENUTransform(EngineCoordinates);
-				NewUp = PawnENUToViewENU.GetUnitAxis(EAxis::Z);
-			}
+
 
 			for (int32 idx = 0; idx < Offset.Num(); idx++)
 			{
 				float ShellThickness = FCString::Atof(*Offset[idx]);
-				FVector Temp = NewUp * ShellThickness * 1000 * 100;//引擎单位为cm
-				FVector OffsetVec = EngineCoordinates + Temp;
+				//FVector Temp = NewUp * ShellThickness * 1000 * 100;//引擎单位为cm
+				FVector Temp = Up * -1 * idx * 1000 * 100;//引擎单位为cm
+
+				FVector OffsetVec = (EngineCoordinates + Temp);
 				//another way 
 				//	FGeographicCoordinates OffsetCoordinates(CurLng, CurLat, ShellThickness * 1000);
 					//GeoReferenceingSystem->GeographicToEngine(OffsetCoordinates, EngineCoordinates);

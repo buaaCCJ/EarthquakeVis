@@ -47,8 +47,8 @@ SourceArt/**/*.tga
 
 # Binary Files
 Binaries/*
-Plugins/*/Binaries/*
-
+#Plugins/*/Binaries/*
+!Plugins/ArcGISMapsSDK/Binaries/ThirdParty/ArcGISMapsSDK/Win64/*
 # Builds
 Build/*
 
@@ -73,6 +73,7 @@ Plugins/*/Intermediate/*
 # Cache files for the editor to use
 DerivedDataCache/*
 !Plugins/VTKPlugin/Source/ThirdParty/VTK/Win64/*
+
 BluCache/*
 
 WindowsNoEditor/*

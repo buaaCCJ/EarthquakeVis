@@ -46,7 +46,8 @@ void AVTKProxyActor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (bStartAnim)
 	{
-		UpdateAnimation();
+		if (CurrentFrameIdx % NumFrameToPlayAnim == 0)
+			UpdateAnimation();
 		CurrentAnimTime += DeltaTime;
 		CurrentFrameIdx++;
 
@@ -144,7 +145,7 @@ void AVTKProxyActor::GenerateFromCRUST(const TArray<FPoint>& Points, const CDT::
 		Triangles.Add(Tri.vertices[2]);
 	}
 	MeshComp->CreateMeshSection_LinearColor(0, Vertices, Triangles,
-		TArray<FVector>(), TArray<FVector2D>(), VerticeColors, TArray<FProcMeshTangent>(), false);
+		Normals, TArray<FVector2D>(), VerticeColors, TArray<FProcMeshTangent>(), false);
 }
 
 void AVTKProxyActor::StartPlayAnimation()
@@ -171,7 +172,7 @@ void AVTKProxyActor::SetArcgisVis(bool bShow)
 
 void AVTKProxyActor::UpdateAnimation()
 {
-	CurrentFrameIdx = CurrentFrameIdx % ColorFrameList.Num();
+	CurrentFrameIdx = (CurrentFrameIdx / 3) % ColorFrameList.Num();
 	TArray<FVector2D> EmptyArray;
 	TArray<FColor> EmptyColorArray;
 

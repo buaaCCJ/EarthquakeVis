@@ -36,7 +36,7 @@ public:
 
 	void GenerateFromCRUST(const TArray<FPoint>& Points, const CDT::TriangleVec& TriangleList);
 
-	void SetColorFrames(const TArray<TArray<FColor>>& Frames) { ColorFrameList = Frames; }
+	void SetColorFrames(int32 _NumFrameToPlayAnim, const TArray<TArray<FColor>>& Frames) { NumFrameToPlayAnim = _NumFrameToPlayAnim, ColorFrameList = Frames; }
 	void StartPlayAnimation();
 
 	void EndPlayAnimation();
@@ -62,4 +62,7 @@ public:
 
 	AArcGISMapActor* ArcGisMapActor = nullptr;
 	AGeoReferencingSystem* GeoReferenceingSystem = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		int32 NumFrameToPlayAnim = 1;
+
 };
