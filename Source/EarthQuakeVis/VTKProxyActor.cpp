@@ -172,10 +172,11 @@ void AVTKProxyActor::SetArcgisVis(bool bShow)
 
 void AVTKProxyActor::UpdateAnimation()
 {
-	CurrentFrameIdx = (CurrentFrameIdx / 3) % ColorFrameList.Num();
+	int32 Temp = 0;
+	Temp = (CurrentFrameIdx / NumFrameToPlayAnim) % ColorFrameList.Num();
 	TArray<FVector2D> EmptyArray;
 	TArray<FColor> EmptyColorArray;
 
-	MeshComp->UpdateMeshSection(0, AllVertices[0], TArray<FVector>(), TArray<FVector2D>(), EmptyArray, EmptyArray, EmptyArray, ColorFrameList[CurrentFrameIdx], TArray<FProcMeshTangent>());
+	MeshComp->UpdateMeshSection(0, AllVertices[0], TArray<FVector>(), TArray<FVector2D>(), EmptyArray, EmptyArray, EmptyArray, ColorFrameList[Temp], TArray<FProcMeshTangent>());
 }
 
